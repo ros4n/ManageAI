@@ -1,0 +1,17 @@
+# env
+
+.env.*
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# backend
+backend/manageai/venv/
+backend/__pycache__/
+backend/manageai/__pycache__/
+backend/manageai/api/__pycache__/
+backend/.env
+# vscode
+.vscode/
