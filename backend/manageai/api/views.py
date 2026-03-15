@@ -58,8 +58,17 @@ class ChatView(APIView):
         history      = data['conversation_history']
         image_base64 = data.get('image_base64')
 
-        topic         = detect_topic(user_message)
-        past_memories = Memory.objects.filter(topic=topic).order_by('-created_at')[:3]
+        topic = detect_topic(user_message)
+        query_embedding = generate_embedding(user_message)  
+
+        if query_embedding:
+            past_memories = Memory.objects.filter(
+                embedding__isnull=False
+            ).order_by(CosineDistance('embedding', query_embedding))[:3]
+        else:
+            past_memories = Memory.objects.filter(
+                topic=topic).order_by('-created_at'
+            )[:3]
 
         context = ''
         if past_memories:
@@ -118,7 +127,11 @@ class SearchView(APIView):
         if query_embedding:
             memories = Memory.objects.filter(
                 embedding__isnull=False
-            ).order_by(CosineDistance('embedding', query_embedding))[:10]
+            ).annotate(
+                distance=CosineDistance('embedding', query_embedding)
+            ).filter(
+                distance__lt=0.4   # ← only return if similarity is close enough
+            ).order_by('distance')[:10]
         else:
             memories = Memory.objects.filter(
                 Q(question__icontains=query) | Q(answer__icontains=query)
