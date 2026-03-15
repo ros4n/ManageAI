@@ -60,11 +60,56 @@ const mdComponents = {
 // ── Message bubble ──────────────────────────────────────────
 function MessageBubble({ msg, index }) {
   const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(msg.content).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  };
+
+  const stripForSpeech = (text) => {
+    return text
+      .replace(/```[\s\S]*?```/g, 'code block.')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/#{1,6}\s+/g, '')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/\[(.+?)\]\(.*?\)/g, '$1')
+      .replace(/\n{2,}/g, '. ')
+      .replace(/\n/g, ' ')
+      .trim();
+  };
+
+  const handleSpeak = () => {
+    if (!window.speechSynthesis) return;
+
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const text = stripForSpeech(msg.content);
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Pick a natural voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes('Google') || v.name.includes('Natural') || v.lang === 'en-US'
+    );
+    if (preferred) utterance.voice = preferred;
+
+    utterance.rate   = 0.95;
+    utterance.pitch  = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend   = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
   };
 
   const isUser = msg.role === 'user';
@@ -152,20 +197,46 @@ function MessageBubble({ msg, index }) {
               </span>
             )}
             {!isUser && (
-              <button
-                onClick={handleCopy}
-                style={{
-                  marginLeft: 'auto', background: 'none', border: 'none',
-                  color: copied ? '#34d399' : '#3a385a', cursor: 'pointer',
-                  fontSize: 11, padding: '2px 0',
-                  transition: 'color 0.2s',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                }}
-                onMouseEnter={e => { if (!copied) e.currentTarget.style.color = '#7c6af7'; }}
-                onMouseLeave={e => { if (!copied) e.currentTarget.style.color = '#3a385a'; }}
-              >
-                {copied ? '✓ Copied' : '⧉ Copy'}
-              </button>
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* TTS button */}
+                <button
+                  onClick={handleSpeak}
+                  title={speaking ? 'Stop speaking' : 'Read aloud'}
+                  style={{
+                    background: speaking ? 'rgba(124,106,247,0.12)' : 'none',
+                    border: speaking ? '1px solid rgba(124,106,247,0.25)' : 'none',
+                    borderRadius: 6,
+                    color: speaking ? '#a78bfa' : '#3a385a',
+                    cursor: 'pointer', fontSize: 13,
+                    padding: speaking ? '2px 7px' : '2px 4px',
+                    transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                  onMouseEnter={e => { if (!speaking) e.currentTarget.style.color = '#7c6af7'; }}
+                  onMouseLeave={e => { if (!speaking) e.currentTarget.style.color = '#3a385a'; }}
+                >
+                  {speaking
+                    ? <><span style={{ fontSize: 11, animation: 'tts-pulse 1s infinite' }}>◼</span> <span style={{ fontSize: 10 }}>Stop</span></>
+                    : <span>🔊</span>
+                  }
+                </button>
+
+                {/* Copy button */}
+                <button
+                  onClick={handleCopy}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: copied ? '#34d399' : '#3a385a', cursor: 'pointer',
+                    fontSize: 11, padding: '2px 0',
+                    transition: 'color 0.2s',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                  onMouseEnter={e => { if (!copied) e.currentTarget.style.color = '#7c6af7'; }}
+                  onMouseLeave={e => { if (!copied) e.currentTarget.style.color = '#3a385a'; }}
+                >
+                  {copied ? '✓ Copied' : '⧉ Copy'}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -212,9 +283,12 @@ export default function Chat({ session, onUpdate }) {
   const [lastTopic, setLastTopic] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [listening, setListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const textareaRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const messages = session?.messages || [];
 
@@ -245,6 +319,104 @@ export default function Chat({ session, onUpdate }) {
     setImageFile(null);
     setImagePreview(null);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous      = true;
+    recognition.interimResults  = true;
+    recognition.lang            = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    let finalTranscript = '';
+
+    recognition.onstart = () => {
+      setListening(true);
+      setVoiceTranscript('');
+      finalTranscript = '';
+    };
+
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += t + ' ';
+        else interim = t;
+      }
+      setVoiceTranscript((finalTranscript + interim).trim());
+    };
+
+    recognition.onerror = (e) => {
+      setListening(false);
+      if (e.error === 'not-allowed') {
+        alert('Microphone access denied. Allow it in browser settings.');
+      } else if (e.error === 'network') {
+        alert('Network error. Make sure you have internet access — Chrome sends audio to Google servers for processing.');
+      }
+      setVoiceTranscript('');
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    try { recognition.start(); }
+    catch (err) { setListening(false); console.warn(err); }
+  };
+
+  const handleVoiceSend = () => {
+    if (!voiceTranscript.trim()) return;
+    setInput(voiceTranscript);
+    setVoiceTranscript('');
+    // small delay so input state updates before sendMessage reads it
+    setTimeout(() => {
+      sendMessageWithText(voiceTranscript);
+    }, 50);
+  };
+
+  const handleVoiceDiscard = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
+    setVoiceTranscript('');
+  };
+
+  const sendMessageWithText = async (text) => {
+    if (!text.trim() || loading) return;
+    setInput('');
+    const userMsg = { role: 'user', content: text.trim(), id: generateId() };
+    const newMessages = [...messages, userMsg];
+    const titleUpdate = messages.length <= 1
+      ? { title: text.slice(0, 50) + (text.length > 50 ? '…' : '') }
+      : {};
+    onUpdate({ messages: newMessages, ...titleUpdate });
+    setLoading(true);
+    try {
+      const history = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+      const res = await chatAPI.sendMessage(text.trim(), history, null);
+      const { answer, topic, context_used } = res.data;
+      const assistantMsg = { role: 'assistant', content: answer, topic, saved: true, id: generateId() };
+      onUpdate({ messages: [...newMessages, assistantMsg], topic });
+      setLastTopic(topic);
+      setContextUsed(!!context_used);
+    } catch {
+      onUpdate({ messages: [...newMessages, { role: 'assistant', content: '⚠️ Error connecting to the server.', id: generateId() }] });
+    }
+    setLoading(false);
   };
 
   const sendMessage = useCallback(async () => {
@@ -317,6 +489,8 @@ export default function Chat({ session, onUpdate }) {
       height: '100%', background: '#0c0c14', position: 'relative',
     }}>
       <style>{`
+        @keyframes tts-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4)} 50%{box-shadow:0 0 0 6px rgba(248,113,113,0)} }
         @keyframes manageai-pulse {
           0%, 60%, 100% { transform: scale(0.55); opacity: 0.25; }
           30% { transform: scale(1); opacity: 1; }
@@ -334,6 +508,80 @@ export default function Chat({ session, onUpdate }) {
           <MessageBubble key={msg.id || i} msg={msg} index={i} />
         ))}
         {loading && <LoadingDots />}
+
+        {/* Live voice preview bubble */}
+        {(listening || voiceTranscript) && (
+          <div style={{ padding: '6px 0' }}>
+            <div style={{ maxWidth: 740, margin: '0 auto', padding: '12px 24px', display: 'flex', gap: 14, flexDirection: 'row-reverse' }}>
+              {/* Avatar */}
+              <div style={{
+                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                background: 'linear-gradient(135deg, #1e3a2f 0%, #1a2040 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 2,
+              }}>U</div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: '#5a8c6a', marginBottom: 7, textAlign: 'right' }}>You</div>
+
+                {/* Transcript text */}
+                <div style={{
+                  background: 'rgba(248,113,113,0.06)',
+                  border: '1px solid rgba(248,113,113,0.2)',
+                  borderRadius: 12, padding: '12px 16px',
+                  fontSize: 14.5, color: '#e2e0f0', lineHeight: 1.65,
+                  minHeight: 44, position: 'relative',
+                }}>
+                  {voiceTranscript || (
+                    <span style={{ color: '#5a4060', fontStyle: 'italic' }}>Listening…</span>
+                  )}
+                  {listening && (
+                    <span style={{ display: 'inline-flex', gap: 3, marginLeft: 8, verticalAlign: 'middle' }}>
+                      {[0,1,2].map(i => (
+                        <span key={i} style={{
+                          width: 5, height: 5, borderRadius: '50%',
+                          background: '#f87171', display: 'inline-block',
+                          animation: 'manageai-pulse 1.35s infinite',
+                          animationDelay: i * 0.18 + 's',
+                        }} />
+                      ))}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action buttons — show when there is transcript */}
+                {voiceTranscript && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={handleVoiceDiscard}
+                      style={{
+                        background: 'rgba(248,113,113,0.08)',
+                        border: '1px solid rgba(248,113,113,0.2)',
+                        borderRadius: 8, padding: '5px 13px',
+                        color: '#f87171', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 500,
+                      }}
+                    >✕ Discard</button>
+                    <button
+                      onClick={handleVoiceSend}
+                      disabled={listening}
+                      style={{
+                        background: listening ? '#1a1830' : 'linear-gradient(135deg, #7c6af7, #5b4ecf)',
+                        border: 'none', borderRadius: 8,
+                        padding: '5px 16px',
+                        color: listening ? '#3a3860' : '#fff',
+                        cursor: listening ? 'default' : 'pointer',
+                        fontSize: 12, fontWeight: 600,
+                        boxShadow: !listening ? '0 2px 10px rgba(124,106,247,0.3)' : 'none',
+                      }}
+                    >{listening ? 'Still listening…' : '↑ Send'}</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -405,7 +653,7 @@ export default function Chat({ session, onUpdate }) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything, or attach an image for visual analysis…"
+              placeholder="Ask anything, attach an image, or use the mic…"
               rows={1}
               style={{
                 width: '100%', background: 'transparent',
@@ -440,6 +688,31 @@ export default function Chat({ session, onUpdate }) {
                   transition: 'color 0.18s',
                 }}
               >📎</button>
+
+              {/* Mic button */}
+              <button
+                onClick={handleVoiceInput}
+                title={listening ? 'Stop recording' : 'Voice input'}
+                style={{
+                  background: listening ? 'rgba(248,113,113,0.12)' : 'none',
+                  border: listening ? '1px solid rgba(248,113,113,0.3)' : 'none',
+                  borderRadius: 7,
+                  color: listening ? '#f87171' : '#3d3b5a',
+                  cursor: 'pointer', fontSize: 16,
+                  padding: listening ? '3px 8px' : '2px 4px',
+                  lineHeight: 1,
+                  transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  animation: listening ? 'mic-pulse 1.2s infinite' : 'none',
+                }}
+                onMouseEnter={e => { if (!listening) e.currentTarget.style.color = '#f87171'; }}
+                onMouseLeave={e => { if (!listening) e.currentTarget.style.color = '#3d3b5a'; }}
+              >
+                {listening
+                  ? <><span>🔴</span><span style={{ fontSize: 10, fontWeight: 600 }}>Listening...</span></>
+                  : <span>🎤</span>
+                }
+              </button>
 
               <div style={{ flex: 1 }} />
 

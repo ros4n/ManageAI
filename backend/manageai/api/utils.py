@@ -3,7 +3,7 @@ import json
 from google import genai 
 from groq import Groq
 
-client_genai = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+client_genai = genai.Client(api_key=os.getenv('GEMINI_API_KEY'),http_options={'api_version': 'v1beta'},)
 groq_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 
@@ -52,7 +52,7 @@ def detect_topic(text: str) -> str:
 def generate_embedding(text: str) -> list:
     try:
         result = client_genai.models.embed_content(
-            model='models/text-embedding-004',
+            model='gemini-embedding-001',
             contents=text,
         )
         return result.embeddings[0].values

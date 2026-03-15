@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q, Count
 from pgvector.django import CosineDistance
-
+from .utils import groq_client, CHAT_MODEL
 from .models import Memory, Flashcard, ChatSession, ChatMessage
 from .serializers import (
     MemorySerializer, FlashcardSerializer, ChatSessionSerializer,
@@ -14,6 +14,38 @@ from .utils import (
     get_groq_response, generate_summary, generate_flashcard,
 )
 
+class FormatMemoryView(APIView):
+    def post(self, request):
+        question = request.data.get('question', '')
+        answer   = request.data.get('answer', '')
+
+        prompt = f"""Reformat this Q&A as clean plain text for a PDF report.
+Rules:
+- No markdown: no **, *, #, >, backticks, or dashes
+- No bullet symbols, use numbered points like 1. 2. 3. if needed
+- Question: one clear concise sentence
+- Answer: well structured paragraphs, max 120 words, plain English
+
+QUESTION: {question}
+ANSWER: {answer}
+
+Reply ONLY with valid JSON, no extra text:
+{{"question": "...", "answer": "..."}}"""
+
+        try:
+            import json
+            response = groq_client.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=[{'role': 'user', 'content': prompt}],
+                max_tokens=400,
+                temperature=0.3,
+            )
+            text = response.choices[0].message.content.strip()
+            text = text.replace('```json', '').replace('```', '').strip()
+            data = json.loads(text)
+            return Response({'question': data['question'], 'answer': data['answer']})
+        except Exception as e:
+            return Response({'question': question, 'answer': answer})
 
 class ChatView(APIView):
     def post(self, request):

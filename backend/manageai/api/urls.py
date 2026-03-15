@@ -12,4 +12,5 @@ urlpatterns = [
     path('sessions/',                            views.ChatSessionListView.as_view()),
     path('sessions/<uuid:session_id>/',          views.ChatSessionDetailView.as_view()),
     path('sessions/<uuid:session_id>/messages/', views.ChatSessionMessagesView.as_view()),
+    path('format-memory/', views.FormatMemoryView.as_view()),
 ]
