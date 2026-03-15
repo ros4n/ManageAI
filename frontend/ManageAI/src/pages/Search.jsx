@@ -2,18 +2,18 @@ import { useState, useRef } from 'react';
 import { searchAPI } from '../api/client';
 
 const TOPIC_COLORS = {
-  Algorithms: '#34d399', Programming: '#60a5fa',
-  Math: '#c084fc',      Physics: '#f87171',
-  Database: '#fbbf24',  General: '#9ca3af',
+  Algorithms: '#059669', Programming: '#2563eb',
+  Math: '#7c3aed',      Physics: '#dc2626',
+  Database: '#d97706',  General: '#6b7280',
 };
 
 const TOPIC_BG = {
-  Algorithms: 'rgba(52,211,153,0.08)',
-  Programming: 'rgba(96,165,250,0.08)',
-  Math:        'rgba(192,132,252,0.08)',
-  Physics:     'rgba(248,113,113,0.08)',
-  Database:    'rgba(251,191,36,0.08)',
-  General:     'rgba(156,163,175,0.08)',
+  Algorithms: '#ecfdf5',
+  Programming: '#eff6ff',
+  Math:        '#f5f3ff',
+  Physics:     '#fef2f2',
+  Database:    '#fffbeb',
+  General:     '#f9fafb',
 };
 
 const SUGGESTIONS = [
@@ -44,29 +44,29 @@ export default function Search({ onLoadChat }) {
   };
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', background: '#0c0c14' }}>
+    <div style={{ height: '100%', overflowY: 'auto', background: '#f5f4fe' }}>
       <style>{`
         .result-card { transition: border-color 0.18s, transform 0.15s, box-shadow 0.18s; }
-        .result-card:hover { border-color: rgba(124,106,247,0.3) !important; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .result-card:hover { border-color: #c4b5fd !important; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(108,92,231,0.12) !important; }
         .open-chat-btn { transition: all 0.15s; }
-        .open-chat-btn:hover { background: rgba(124,106,247,0.2) !important; color: #c4b5fd !important; }
+        .open-chat-btn:hover { background: #ede9fe !important; color: #6c5ce7 !important; }
         .suggestion-chip { transition: all 0.15s; }
-        .suggestion-chip:hover { background: rgba(124,106,247,0.15) !important; border-color: rgba(124,106,247,0.35) !important; color: #c4b5fd !important; }
-        .search-input:focus { border-color: rgba(124,106,247,0.4) !important; box-shadow: 0 0 0 3px rgba(124,106,247,0.08) !important; }
+        .suggestion-chip:hover { background: #ede9fe !important; border-color: #c4b5fd !important; color: #6c5ce7 !important; }
+        .search-input:focus { border-color: #a78bfa !important; box-shadow: 0 0 0 4px rgba(124,106,247,0.1) !important; }
       `}</style>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '28px 24px' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '30px 28px' }}>
         {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e2e0f0', letterSpacing: '-0.5px', marginBottom: 5 }}>Search Memory</h1>
-          <p style={{ fontSize: 13, color: '#4a4870' }}>Semantic similarity search across all your saved knowledge</p>
+        <div style={{ marginBottom: 26 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1640', letterSpacing: '-0.6px', marginBottom: 6 }}>Search Memory</h1>
+          <p style={{ fontSize: 14, color: '#9d9bc0' }}>Semantic similarity search across all your saved knowledge</p>
         </div>
 
         {/* Search input */}
         <div style={{ position: 'relative', marginBottom: 20 }}>
           <span style={{
-            position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-            color: '#3d3b58', fontSize: 18, pointerEvents: 'none',
+            position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
+            color: '#b0acd4', fontSize: 20, pointerEvents: 'none',
           }}>⌕</span>
           <input
             ref={inputRef}
@@ -77,25 +77,28 @@ export default function Search({ onLoadChat }) {
             placeholder="e.g. 'how does quicksort work' or 'SQL window functions'"
             style={{
               width: '100%',
-              background: '#14132a',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12, padding: '14px 120px 14px 48px',
-              color: '#e2e0f0', fontSize: 14.5, outline: 'none',
+              background: '#ffffff',
+              border: '1.5px solid #ede9fe',
+              borderRadius: 14, padding: '15px 130px 15px 52px',
+              color: '#1a1640', fontSize: 15, outline: 'none',
               transition: 'border-color 0.2s, box-shadow 0.2s',
+              boxShadow: '0 1px 6px rgba(108,92,231,0.07)',
             }}
           />
           <button
             onClick={() => doSearch()}
             disabled={loading || !query.trim()}
             style={{
-              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-              background: (loading || !query.trim()) ? '#1a1830' : 'linear-gradient(135deg, #7c6af7, #5b4ecf)',
-              border: 'none', borderRadius: 9,
-              padding: '8px 18px',
-              color: (loading || !query.trim()) ? '#3a3860' : '#fff',
+              position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)',
+              background: (loading || !query.trim())
+                ? '#f5f4fe'
+                : 'linear-gradient(135deg, #7c6af7, #5b4ecf)',
+              border: 'none', borderRadius: 10,
+              padding: '9px 20px',
+              color: (loading || !query.trim()) ? '#c4bfe8' : '#fff',
               cursor: (loading || !query.trim()) ? 'default' : 'pointer',
-              fontSize: 13.5, fontWeight: 600,
-              boxShadow: (!loading && query.trim()) ? '0 2px 12px rgba(124,106,247,0.3)' : 'none',
+              fontSize: 14, fontWeight: 700,
+              boxShadow: (!loading && query.trim()) ? '0 2px 12px rgba(124,106,247,0.35)' : 'none',
               transition: 'all 0.2s',
             }}
           >{loading ? '···' : 'Search'}</button>
@@ -103,19 +106,20 @@ export default function Search({ onLoadChat }) {
 
         {/* Suggestion chips */}
         {!searched && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 40 }}>
-            <span style={{ fontSize: 12, color: '#3a3860', alignSelf: 'center', marginRight: 4 }}>Try:</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 44 }}>
+            <span style={{ fontSize: 13, color: '#c4bfe8', alignSelf: 'center', marginRight: 4, fontWeight: 500 }}>Try:</span>
             {SUGGESTIONS.map(s => (
               <button
                 key={s}
                 className="suggestion-chip"
                 onClick={() => doSearch(s)}
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 20, padding: '5px 13px',
-                  color: '#5a5878', cursor: 'pointer',
-                  fontSize: 12.5,
+                  background: '#ffffff',
+                  border: '1.5px solid #ede9fe',
+                  borderRadius: 22, padding: '6px 15px',
+                  color: '#9d9bc0', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 500,
+                  boxShadow: '0 1px 4px rgba(108,92,231,0.06)',
                 }}
               >{s}</button>
             ))}
@@ -124,80 +128,82 @@ export default function Search({ onLoadChat }) {
 
         {/* Results */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#3a3860' }}>
-            <div style={{ fontSize: 13, marginBottom: 8 }}>Searching your memory vault…</div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', padding: '70px 0', color: '#c4bfe8' }}>
+            <div style={{ fontSize: 14, marginBottom: 14, color: '#9d9bc0', fontWeight: 500 }}>Searching your memory vault…</div>
+            <div style={{ display: 'flex', gap: 7, justifyContent: 'center' }}>
               {[0, 1, 2].map(i => (
                 <div key={i} style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: '#7c6af7', opacity: 0.4,
-                  animation: 'manageai-pulse 1.35s infinite ease-in-out',
+                  width: 9, height: 9, borderRadius: '50%',
+                  background: '#7c6af7', opacity: 0.5,
+                  animation: 'search-pulse 1.35s infinite ease-in-out',
                   animationDelay: `${i * 0.18}s`,
                 }} />
               ))}
             </div>
           </div>
         ) : !searched ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#3a3860' }}>
-            <div style={{ fontSize: 42, marginBottom: 16 }}>🔍</div>
-            <div style={{ fontSize: 15, color: '#6a6888', fontWeight: 500, marginBottom: 8 }}>Search your knowledge base</div>
-            <div style={{ fontSize: 13 }}>Uses vector similarity to find semantically related answers</div>
+          <div style={{ textAlign: 'center', padding: '70px 0' }}>
+            <div style={{ fontSize: 52, marginBottom: 18 }}>🔍</div>
+            <div style={{ fontSize: 18, color: '#4a4478', fontWeight: 700, marginBottom: 10 }}>Search your knowledge base</div>
+            <div style={{ fontSize: 14, color: '#9d9bc0' }}>Uses vector similarity to find semantically related answers</div>
           </div>
         ) : results.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#3a3860' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>¿</div>
-            <div style={{ fontSize: 15, color: '#6a6888', fontWeight: 500, marginBottom: 8 }}>No results found</div>
-            <div style={{ fontSize: 13 }}>Try different keywords or chat more to build your memory</div>
+          <div style={{ textAlign: 'center', padding: '70px 0' }}>
+            <div style={{ fontSize: 40, marginBottom: 18 }}>¿</div>
+            <div style={{ fontSize: 18, color: '#4a4478', fontWeight: 700, marginBottom: 10 }}>No results found</div>
+            <div style={{ fontSize: 14, color: '#9d9bc0' }}>Try different keywords or chat more to build your memory</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 12.5, color: '#3a3860', marginBottom: 4 }}>
-              {results.length} result{results.length !== 1 ? 's' : ''} for <em style={{ color: '#7c6af7' }}>"{query}"</em>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            <div style={{ fontSize: 13.5, color: '#9d9bc0', marginBottom: 6, fontWeight: 500 }}>
+              {results.length} result{results.length !== 1 ? 's' : ''} for{' '}
+              <em style={{ color: '#7c6af7', fontStyle: 'normal', fontWeight: 700 }}>"{query}"</em>
             </div>
             {results.map(m => (
               <div
                 key={m.id}
                 className="result-card"
                 style={{
-                  background: '#13122a',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 12, padding: '16px 18px',
+                  background: '#ffffff',
+                  border: '1.5px solid #ede9fe',
+                  borderRadius: 14, padding: '18px 20px',
+                  boxShadow: '0 1px 6px rgba(108,92,231,0.06)',
                 }}
               >
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 9, marginBottom: 12, alignItems: 'center' }}>
                   <span style={{
-                    fontSize: 11, padding: '2px 10px', borderRadius: 20,
-                    background: TOPIC_BG[m.topic] || 'rgba(255,255,255,0.04)',
-                    color: TOPIC_COLORS[m.topic] || '#9ca3af',
-                    border: `1px solid ${TOPIC_COLORS[m.topic] || '#9ca3af'}33`,
-                    fontWeight: 500,
+                    fontSize: 12, padding: '3px 12px', borderRadius: 22,
+                    background: TOPIC_BG[m.topic] || '#f9fafb',
+                    color: TOPIC_COLORS[m.topic] || '#6b7280',
+                    border: `1px solid ${TOPIC_COLORS[m.topic] || '#6b7280'}25`,
+                    fontWeight: 700,
                   }}>{m.topic}</span>
-                  <span style={{ fontSize: 11, color: '#2e2c48', marginLeft: 'auto' }}>
+                  <span style={{ fontSize: 12, color: '#c4bfe8', marginLeft: 'auto', fontWeight: 500 }}>
                     {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
 
-                <div style={{ fontWeight: 500, fontSize: 14, color: '#d2d0e8', marginBottom: 8, lineHeight: 1.45 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1640', marginBottom: 9, lineHeight: 1.46 }}>
                   {m.question}
                 </div>
 
                 <div style={{
-                  fontSize: 12.5, color: '#4a4870', lineHeight: 1.65,
+                  fontSize: 13.5, color: '#6b6892', lineHeight: 1.68,
                   display: '-webkit-box', WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                  marginBottom: 12,
+                  marginBottom: 14,
                 }}>{m.answer}</div>
 
                 <button
                   className="open-chat-btn"
                   onClick={() => onLoadChat(m)}
                   style={{
-                    background: 'rgba(124,106,247,0.1)',
-                    border: '1px solid rgba(124,106,247,0.18)',
-                    borderRadius: 7, padding: '5px 12px',
-                    color: '#9b87f5', cursor: 'pointer',
-                    fontSize: 12, fontWeight: 500,
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    background: '#f5f4fe',
+                    border: '1.5px solid #ede9fe',
+                    borderRadius: 9, padding: '6px 14px',
+                    color: '#7c6af7', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
                 >💬 Open in Chat</button>
               </div>
@@ -207,7 +213,7 @@ export default function Search({ onLoadChat }) {
       </div>
 
       <style>{`
-        @keyframes manageai-pulse {
+        @keyframes search-pulse {
           0%, 60%, 100% { transform: scale(0.6); opacity: 0.25; }
           30% { transform: scale(1); opacity: 1; }
         }

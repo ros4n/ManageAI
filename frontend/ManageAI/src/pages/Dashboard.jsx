@@ -3,30 +3,35 @@ import { memoryAPI, topicAPI, flashcardAPI } from '../api/client';
 import jsPDF from 'jspdf';
 
 const TOPIC_COLORS = {
-  Algorithms: '#34d399', Programming: '#60a5fa',
-  Math: '#c084fc',      Physics: '#f87171',
-  Database: '#fbbf24',  General: '#9ca3af',
+  Algorithms: '#059669', Programming: '#2563eb',
+  Math: '#7c3aed',      Physics: '#dc2626',
+  Database: '#d97706',  General: '#6b7280',
 };
 
 const TOPIC_BG = {
-  Algorithms: 'rgba(52,211,153,0.08)',
-  Programming: 'rgba(96,165,250,0.08)',
-  Math:        'rgba(192,132,252,0.08)',
-  Physics:     'rgba(248,113,113,0.08)',
-  Database:    'rgba(251,191,36,0.08)',
-  General:     'rgba(156,163,175,0.08)',
+  Algorithms: '#ecfdf5',
+  Programming: '#eff6ff',
+  Math:        '#f5f3ff',
+  Physics:     '#fef2f2',
+  Database:    '#fffbeb',
+  General:     '#f9fafb',
 };
 
-function StatCard({ label, value, accent }) {
+function StatCard({ label, value, accent, icon }) {
   return (
     <div style={{
-      background: '#14132a',
-      border: '1px solid rgba(255,255,255,0.07)',
-      borderRadius: 12, padding: '18px 20px',
+      background: '#ffffff',
+      border: '1.5px solid #ede9fe',
+      borderRadius: 14, padding: '20px 22px',
       textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 30, fontWeight: 700, color: accent || '#a78bfa', letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 11.5, color: '#4a4870', marginTop: 6, letterSpacing: '0.02em' }}>{label}</div>
+      boxShadow: '0 1px 8px rgba(108,92,231,0.07)',
+      transition: 'box-shadow 0.2s, transform 0.2s',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(108,92,231,0.13)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 8px rgba(108,92,231,0.07)'; e.currentTarget.style.transform = 'none'; }}
+    >
+      <div style={{ fontSize: 32, fontWeight: 800, color: accent || '#7c6af7', letterSpacing: '-1.5px', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 12.5, color: '#9d9bc0', marginTop: 6, letterSpacing: '0.02em', fontWeight: 500 }}>{label}</div>
     </div>
   );
 }
@@ -80,40 +85,26 @@ export default function Dashboard({ onLoadChat }) {
 
   const stripMarkdown = (text) => {
     return text
-      .replace(/```[\s\S]*?```/g, '')             // remove code blocks entirely
-      .replace(/`([^`]+)`/g, '$1')                 // inline code → plain text
-      .replace(/\*\*\*(.+?)\*\*\*/g, '$1')         // ***bold italic***
-      .replace(/\*\*(.+?)\*\*/g, '$1')             // **bold**
-      .replace(/\*(.+?)\*/g, '$1')                 // *italic*
-      .replace(/___(.+?)___/g, '$1')               // ___bold italic___
-      .replace(/__(.+?)__/g, '$1')                 // __bold__
-      .replace(/_(.+?)_/g, '$1')                   // _italic_
-      .replace(/#{1,6}\s+(.+)/g, '$1')             // # headings → plain text
-      .replace(/^\s*[-*+]\s+/gm, '• ')             // - list → bullet
-      .replace(/^\s*\d+\.\s+/gm, '')               // 1. numbered list
-      .replace(/\[(.+?)\]\(.*?\)/g, '$1')          // [link](url) → link text
-      .replace(/^>\s+/gm, '')                      // > blockquotes
-      .replace(/---+/g, '')                        // horizontal rules
-      .replace(/\n{3,}/g, '\n\n')                  // max 2 newlines
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/___(.+?)___/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      .replace(/_(.+?)_/g, '$1')
+      .replace(/#{1,6}\s+(.+)/g, '$1')
+      .replace(/^\s*[-*+]\s+/gm, '• ')
+      .replace(/^\s*\d+\.\s+/gm, '')
+      .replace(/\[(.+?)\]\(.*?\)/g, '$1')
+      .replace(/^>\s+/gm, '')
+      .replace(/---+/g, '')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
   };
 
   const formatMemoryWithAI = async (memory) => {
     try {
-      const prompt = `You are formatting a Q&A memory for a PDF report.
-Given this question and answer, rewrite them as clean, well-structured plain text.
-- No markdown symbols like **, *, #, >, \`, or ---
-- No bullet dashes, use plain sentences or numbered points like "1. 2. 3."
-- Keep all technical accuracy
-- Question: rewrite as a clear, concise question (1-2 lines max)
-- Answer: rewrite as organized paragraphs, max 150 words, no symbols
-
-QUESTION: ${memory.question}
-ANSWER: ${memory.answer}
-
-Respond ONLY with this JSON format, no extra text:
-{"question": "cleaned question here", "answer": "cleaned answer here"}`;
-
       const res = await fetch('http://localhost:8000/api/format-memory/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +114,6 @@ Respond ONLY with this JSON format, no extra text:
       const data = await res.json();
       return { question: data.question, answer: data.answer };
     } catch {
-      // fallback to stripMarkdown if API fails
       return { question: stripMarkdown(memory.question), answer: stripMarkdown(memory.answer) };
     }
   };
@@ -133,7 +123,6 @@ Respond ONLY with this JSON format, no extra text:
     setExporting(true);
     setExportProgress('Formatting memories with AI...');
 
-    // Format all memories via AI
     const formatted = [];
     for (let i = 0; i < memories.length; i++) {
       setExportProgress(`Formatting memory ${i + 1} of ${memories.length}...`);
@@ -174,7 +163,6 @@ Respond ONLY with this JSON format, no extra text:
       if (y + needed > pageHeight - 18) newPage();
     };
 
-    // COVER PAGE
     doc.setFillColor(40, 40, 40);
     doc.rect(0, 0, pageWidth, 4, 'F');
     y = 52;
@@ -194,233 +182,166 @@ Respond ONLY with this JSON format, no extra text:
     doc.setDrawColor(40, 40, 40);
     doc.setLineWidth(1);
     doc.line(margin, y, margin + 40, y);
-    y += 14;
+    y += 20;
 
-    const exportDate = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    });
     doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    doc.setFont(undefined, 'normal');
-    doc.text('Date:', margin, y);
-    doc.setFont(undefined, 'bold');
-    doc.text(exportDate, margin + 22, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y);
     y += 7;
-
-    doc.setFont(undefined, 'normal');
-    doc.text('Total Memories:', margin, y);
-    doc.setFont(undefined, 'bold');
-    doc.text(`${memories.length}`, margin + 40, y);
+    doc.text(`Total memories: ${memories.length}`, margin, y);
     y += 7;
-
-    const topicCounts = memories.reduce((acc, m) => {
-      acc[m.topic] = (acc[m.topic] || 0) + 1;
-      return acc;
-    }, {});
-    doc.setFont(undefined, 'normal');
-    doc.text('Topics:', margin, y);
-    doc.setFont(undefined, 'bold');
-    const topicText = Object.entries(topicCounts).map(([t, c]) => `${t} (${c})`).join('  •  ');
-    const topicLines = doc.splitTextToSize(topicText, contentWidth - 20);
-    doc.text(topicLines, margin + 18, y);
-    y += topicLines.length * 6 + 12;
-
-    doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-
+    if (filter) { doc.text(`Topic filter: ${filter}`, margin, y); y += 7; }
     addFooter();
 
-    // CONTENT PAGES
     doc.addPage();
     pageNum++;
     y = margin;
 
-    const grouped = formatted.reduce((acc, m) => {
-      if (!acc[m.topic]) acc[m.topic] = [];
-      acc[m.topic].push(m);
-      return acc;
-    }, {});
+    formatted.forEach((m, idx) => {
+      checkSpace(40);
+      doc.setFontSize(9);
+      doc.setTextColor(140, 140, 140);
+      doc.setFont(undefined, 'normal');
+      doc.text(`#${idx + 1}  •  ${m.topic || 'General'}  •  ${new Date(m.created_at).toLocaleDateString()}`, margin, y);
+      y += 7;
 
-    Object.entries(grouped).forEach(([topic, items]) => {
-      checkSpace(16);
-
-      doc.setFillColor(40, 40, 40);
-      doc.rect(margin, y - 5, contentWidth, 11, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11.5);
+      doc.setTextColor(20, 20, 20);
       doc.setFont(undefined, 'bold');
-      doc.text(`${topic.toUpperCase()}   —   ${items.length} ${items.length === 1 ? 'entry' : 'entries'}`, margin + 4, y + 1.5);
-      y += 13;
+      const qLines = doc.splitTextToSize(m.question, contentWidth);
+      checkSpace(qLines.length * 6 + 6);
+      doc.text(qLines, margin, y);
+      y += qLines.length * 6 + 5;
 
-      items.forEach((m, idx) => {
-        checkSpace(25);
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      doc.setFont(undefined, 'normal');
+      const aLines = doc.splitTextToSize(m.answer, contentWidth);
+      const aHeight = aLines.length * 5.5;
+      checkSpace(aHeight + 14);
+      doc.text(aLines, margin, y);
+      y += aHeight + 14;
 
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'normal');
-        const dateStr = new Date(m.created_at).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', year: 'numeric',
-        });
-        doc.text(`${idx + 1}.`, margin, y);
-        doc.text(dateStr, pageWidth - margin - doc.getTextWidth(dateStr), y);
-        y += 6;
-
-        doc.setFontSize(7.5);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'bold');
-        doc.text('QUESTION', margin, y);
-        y += 5;
-
-        checkSpace(8);
-        doc.setFontSize(10.5);
-        doc.setTextColor(10, 10, 10);
-        doc.setFont(undefined, 'bold');
-        const qLines = doc.splitTextToSize(m.question, contentWidth);
-        qLines.forEach(line => {
-          checkSpace(6);
-          doc.text(line, margin, y);
-          y += 5.5;
-        });
-        y += 3;
-
-        checkSpace(8);
-        doc.setFontSize(7.5);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'bold');
-        doc.text('ANSWER', margin, y);
-        y += 5;
-
-        doc.setFontSize(9.5);
-        doc.setTextColor(25, 25, 25);
-        doc.setFont(undefined, 'normal');
-        const aLines = doc.splitTextToSize(m.answer, contentWidth);
-        aLines.forEach(line => {
-          checkSpace(6);
-          doc.text(line, margin, y);
-          y += 5.2;
-        });
-
-        y += 4;
-        doc.setDrawColor(210, 210, 210);
-        doc.setLineWidth(0.2);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 8;
-      });
-
-      y += 4;
+      if (idx < formatted.length - 1) {
+        doc.setDrawColor(220, 220, 220);
+        doc.setLineWidth(0.15);
+        doc.line(margin, y - 7, pageWidth - margin, y - 7);
+      }
     });
 
     addFooter();
-    doc.save(`manageai-memories-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save('manageai-memories.pdf');
     setExporting(false);
     setExportProgress('');
   };
 
-  const today = new Date().toDateString();
-  const todayCount = memories.filter(m => new Date(m.created_at).toDateString() === today).length;
-  const weekCount = memories.filter(m => Date.now() - new Date(m.created_at) < 7 * 86400000).length;
+  const todayStr = new Date().toDateString();
+  const todayCount = memories.filter(m => new Date(m.created_at).toDateString() === todayStr).length;
+  const weekCount = memories.filter(m => Date.now() - new Date(m.created_at).getTime() < 7 * 86400000).length;
 
   return (
-    <div style={{
-      height: '100%', overflowY: 'auto',
-      background: '#0c0c14',
-    }}>
+    <div style={{ height: '100%', overflowY: 'auto', background: '#f5f4fe' }}>
       <style>{`
-        .memory-card { transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s; }
-        .memory-card:hover { border-color: rgba(124,106,247,0.3) !important; box-shadow: 0 4px 24px rgba(0,0,0,0.3); transform: translateY(-1px); }
-        .load-chat-btn { transition: all 0.15s; }
-        .load-chat-btn:hover { background: rgba(124,106,247,0.2) !important; color: #c4b5fd !important; }
+        @keyframes manageai-spin { to { transform: rotate(360deg); } }
+        @keyframes manageai-pulse { 0%, 60%, 100% { transform: scale(0.55); opacity: 0.3; } 30% { transform: scale(1); opacity: 1; } }
+        .memory-card { transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s; }
+        .memory-card:hover { border-color: #c4b5fd !important; box-shadow: 0 4px 20px rgba(108,92,231,0.1) !important; transform: translateY(-1px); }
         .filter-pill { transition: all 0.15s; }
-        .filter-pill:hover { border-color: rgba(124,106,247,0.35) !important; color: #c4b5fd !important; }
-        .delete-mem-btn { transition: all 0.15s; }
-        .delete-mem-btn:hover { background: rgba(248,113,113,0.12) !important; color: #f87171 !important; }
-        .export-btn:hover { background: rgba(52,211,153,0.2) !important; }
+        .filter-pill:hover { border-color: #c4b5fd !important; color: #6c5ce7 !important; }
+        .load-chat-btn:hover { background: #ede9fe !important; color: #6c5ce7 !important; }
+        .delete-mem-btn:hover { background: #fef2f2 !important; border-color: #fca5a5 !important; color: #ef4444 !important; }
+        .export-btn:hover:not(:disabled) { background: #f0fdf4 !important; }
       `}</style>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '30px 28px' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 30, flexWrap: 'wrap', gap: 14 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e2e0f0', letterSpacing: '-0.5px', marginBottom: 5 }}>Memory Vault</h1>
-            <p style={{ fontSize: 13, color: '#4a4870' }}>Every conversation saved, tagged, and searchable</p>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1640', letterSpacing: '-0.6px', marginBottom: 6 }}>Memory Vault</h1>
+            <p style={{ fontSize: 14, color: '#9d9bc0', fontWeight: 400 }}>
+              {memories.length > 0
+                ? `${memories.length} saved memories across ${topics.length} topic${topics.length !== 1 ? 's' : ''}`
+                : 'Your knowledge base grows with every conversation'}
+            </p>
           </div>
-
-          {/* Button group */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
             {exporting && (
               <div style={{
-                fontSize: 11.5, color: '#34d399',
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'rgba(52,211,153,0.07)',
-                border: '1px solid rgba(52,211,153,0.15)',
-                borderRadius: 7, padding: '5px 12px',
+                fontSize: 12.5, color: '#7c6af7',
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: '#f0eeff', border: '1px solid #c4b5fd',
+                borderRadius: 8, padding: '5px 12px', fontWeight: 500,
               }}>
                 <span style={{ animation: 'manageai-spin 1s linear infinite', display: 'inline-block' }}>◌</span>
                 {exportProgress}
               </div>
             )}
             <div style={{ display: 'flex', gap: 9 }}>
-            <button
-              className="export-btn"
-              onClick={handleExportPDF}
-              disabled={memories.length === 0 || exporting}
-              style={{
-                background: (memories.length === 0 || exporting) ? '#1a1830' : 'rgba(52,211,153,0.12)',
-                border: '1px solid rgba(52,211,153,0.22)',
-                borderRadius: 9, padding: '8px 16px',
-                color: (memories.length === 0 || exporting) ? '#3a3860' : '#34d399',
-                cursor: (memories.length === 0 || exporting) ? 'default' : 'pointer',
-                fontSize: 13, fontWeight: 500,
-                display: 'flex', alignItems: 'center', gap: 7,
-                transition: 'all 0.15s',
-              }}
-            >
-              <span>{exporting ? '◌' : '↓'}</span>
-              {exporting ? 'Exporting...' : 'Export PDF'}
-            </button>
+              <button
+                className="export-btn"
+                onClick={handleExportPDF}
+                disabled={memories.length === 0 || exporting}
+                style={{
+                  background: (memories.length === 0 || exporting) ? '#f5f4fe' : '#ffffff',
+                  border: '1.5px solid #ede9fe',
+                  borderRadius: 10, padding: '9px 17px',
+                  color: (memories.length === 0 || exporting) ? '#c4bfe8' : '#059669',
+                  cursor: (memories.length === 0 || exporting) ? 'default' : 'pointer',
+                  fontSize: 13.5, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  transition: 'all 0.15s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                }}
+              >
+                <span>{exporting ? '◌' : '↓'}</span>
+                {exporting ? 'Exporting...' : 'Export PDF'}
+              </button>
 
-            <button
-              onClick={handleBulkFlashcards}
-              disabled={generating}
-              style={{
-                background: generating ? '#1a1830' : 'rgba(124,106,247,0.12)',
-                border: '1px solid rgba(124,106,247,0.22)',
-                borderRadius: 9, padding: '8px 16px',
-                color: generating ? '#4a4870' : '#a78bfa',
-                cursor: generating ? 'default' : 'pointer',
-                fontSize: 13, fontWeight: 500,
-                display: 'flex', alignItems: 'center', gap: 7,
-                transition: 'all 0.15s',
-              }}
-            >
-              <span>✦</span>
-              {generating ? 'Generating flashcards…' : 'Auto-generate flashcards'}
-            </button>
+              <button
+                onClick={handleBulkFlashcards}
+                disabled={generating}
+                style={{
+                  background: generating ? '#f5f4fe' : '#ffffff',
+                  border: '1.5px solid #ede9fe',
+                  borderRadius: 10, padding: '9px 17px',
+                  color: generating ? '#c4bfe8' : '#7c6af7',
+                  cursor: generating ? 'default' : 'pointer',
+                  fontSize: 13.5, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  transition: 'all 0.15s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                }}
+                onMouseEnter={e => { if (!generating) e.currentTarget.style.background = '#f0eeff'; }}
+                onMouseLeave={e => { if (!generating) e.currentTarget.style.background = '#ffffff'; }}
+              >
+                <span>✦</span>
+                {generating ? 'Generating flashcards…' : 'Auto-generate flashcards'}
+              </button>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 28 }}>
-          <StatCard label="Total memories" value={memories.length} accent="#a78bfa" />
-          <StatCard label="Topics covered" value={topics.length} accent="#60a5fa" />
-          <StatCard label="Added today" value={todayCount} accent="#34d399" />
-          <StatCard label="This week" value={weekCount} accent="#fbbf24" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 30 }}>
+          <StatCard label="Total memories" value={memories.length} accent="#7c6af7" />
+          <StatCard label="Topics covered" value={topics.length} accent="#2563eb" />
+          <StatCard label="Added today" value={todayCount} accent="#059669" />
+          <StatCard label="This week" value={weekCount} accent="#d97706" />
         </div>
 
         {/* Topic filter pills */}
-        <div style={{ display: 'flex', gap: 7, marginBottom: 22, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             className="filter-pill"
             onClick={() => setFilter(null)}
             style={{
-              background: !filter ? 'rgba(124,106,247,0.15)' : 'transparent',
-              border: `1px solid ${!filter ? 'rgba(124,106,247,0.35)' : 'rgba(255,255,255,0.07)'}`,
-              borderRadius: 20, padding: '4px 14px',
-              color: !filter ? '#c4b5fd' : '#4a4870',
-              cursor: 'pointer', fontSize: 12.5, fontWeight: !filter ? 500 : 400,
+              background: !filter ? '#ede9fe' : '#ffffff',
+              border: `1.5px solid ${!filter ? '#c4b5fd' : '#ede9fe'}`,
+              borderRadius: 22, padding: '5px 16px',
+              color: !filter ? '#6c5ce7' : '#9d9bc0',
+              cursor: 'pointer', fontSize: 13, fontWeight: !filter ? 700 : 400,
+              transition: 'all 0.15s',
             }}
           >All ({memories.length})</button>
 
@@ -430,12 +351,13 @@ Respond ONLY with this JSON format, no extra text:
               className="filter-pill"
               onClick={() => setFilter(t.topic)}
               style={{
-                background: filter === t.topic ? `${TOPIC_BG[t.topic] || 'rgba(255,255,255,0.05)'}` : 'transparent',
-                border: `1px solid ${filter === t.topic ? (TOPIC_COLORS[t.topic] || '#9ca3af') + '55' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: 20, padding: '4px 14px',
-                color: filter === t.topic ? (TOPIC_COLORS[t.topic] || '#9ca3af') : '#4a4870',
-                cursor: 'pointer', fontSize: 12.5,
-                fontWeight: filter === t.topic ? 500 : 400,
+                background: filter === t.topic ? TOPIC_BG[t.topic] || '#f9fafb' : '#ffffff',
+                border: `1.5px solid ${filter === t.topic ? (TOPIC_COLORS[t.topic] || '#6b7280') + '55' : '#ede9fe'}`,
+                borderRadius: 22, padding: '5px 16px',
+                color: filter === t.topic ? (TOPIC_COLORS[t.topic] || '#6b7280') : '#9d9bc0',
+                cursor: 'pointer', fontSize: 13,
+                fontWeight: filter === t.topic ? 700 : 400,
+                transition: 'all 0.15s',
               }}
             >{t.topic} ({t.count})</button>
           ))}
@@ -443,15 +365,15 @@ Respond ONLY with this JSON format, no extra text:
 
         {/* Memory list */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#3a3860' }}>
-            <div style={{ fontSize: 32, marginBottom: 12, animation: 'manageai-spin 1.2s linear infinite' }}>◌</div>
-            <div style={{ fontSize: 13 }}>Loading memories…</div>
+          <div style={{ textAlign: 'center', padding: '70px 0', color: '#c4bfe8' }}>
+            <div style={{ fontSize: 34, marginBottom: 14, animation: 'manageai-spin 1.2s linear infinite', display: 'inline-block' }}>◌</div>
+            <div style={{ fontSize: 14, color: '#b0acd4', marginTop: 4 }}>Loading memories…</div>
           </div>
         ) : memories.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: '#3a3860' }}>
-            <div style={{ fontSize: 44, marginBottom: 16 }}>🧠</div>
-            <div style={{ fontSize: 16, color: '#7a78a0', marginBottom: 8, fontWeight: 500 }}>No memories yet</div>
-            <div style={{ fontSize: 13 }}>Start a chat to build your knowledge vault</div>
+          <div style={{ textAlign: 'center', padding: '90px 0', color: '#c4bfe8' }}>
+            <div style={{ fontSize: 52, marginBottom: 18 }}>🧠</div>
+            <div style={{ fontSize: 18, color: '#7a7898', marginBottom: 10, fontWeight: 600 }}>No memories yet</div>
+            <div style={{ fontSize: 14, color: '#b0acd4' }}>Start a chat to build your knowledge vault</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -463,31 +385,33 @@ Respond ONLY with this JSON format, no extra text:
                   className="memory-card"
                   onClick={() => setExpandedId(isExpanded ? null : m.id)}
                   style={{
-                    background: '#13122a',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: 12, padding: '16px 18px',
+                    background: '#ffffff',
+                    border: '1.5px solid #ede9fe',
+                    borderRadius: 14, padding: '18px 20px',
                     cursor: 'pointer',
+                    boxShadow: '0 1px 6px rgba(108,92,231,0.06)',
                   }}
                 >
-                  {/* Question + topic row */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                  {/* Question + date row */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
                     <div style={{
-                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                      background: TOPIC_COLORS[m.topic] || '#9ca3af',
-                      marginTop: 6,
+                      width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+                      background: TOPIC_COLORS[m.topic] || '#6b7280',
+                      marginTop: 7,
+                      boxShadow: `0 0 6px ${TOPIC_COLORS[m.topic] || '#6b7280'}55`,
                     }} />
-                    <div style={{ flex: 1, fontWeight: 500, fontSize: 14, color: '#d2d0e8', lineHeight: 1.45 }}>
+                    <div style={{ flex: 1, fontWeight: 600, fontSize: 14.5, color: '#1a1640', lineHeight: 1.48 }}>
                       {m.question}
                     </div>
-                    <span style={{ fontSize: 11, color: '#3a3860', flexShrink: 0, marginTop: 2 }}>
+                    <span style={{ fontSize: 12, color: '#c4bfe8', flexShrink: 0, marginTop: 2, fontWeight: 500 }}>
                       {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
 
                   {/* Answer preview / full */}
                   <div style={{
-                    fontSize: 12.5, color: '#5a5878', lineHeight: 1.6,
-                    marginBottom: 12, marginLeft: 18,
+                    fontSize: 13.5, color: '#6b6892', lineHeight: 1.65,
+                    marginBottom: 14, marginLeft: 21,
                     ...(isExpanded ? {} : {
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -499,13 +423,13 @@ Respond ONLY with this JSON format, no extra text:
                   </div>
 
                   {/* Action row */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginLeft: 21 }}>
                     <span style={{
-                      fontSize: 11, padding: '2px 10px', borderRadius: 20,
-                      background: TOPIC_BG[m.topic] || 'rgba(255,255,255,0.04)',
-                      color: TOPIC_COLORS[m.topic] || '#9ca3af',
-                      border: `1px solid ${TOPIC_COLORS[m.topic] || '#9ca3af'}33`,
-                      fontWeight: 500,
+                      fontSize: 12, padding: '3px 11px', borderRadius: 22,
+                      background: TOPIC_BG[m.topic] || '#f9fafb',
+                      color: TOPIC_COLORS[m.topic] || '#6b7280',
+                      border: `1px solid ${TOPIC_COLORS[m.topic] || '#6b7280'}25`,
+                      fontWeight: 600,
                     }}>{m.topic}</span>
 
                     <div style={{ flex: 1 }} />
@@ -514,12 +438,13 @@ Respond ONLY with this JSON format, no extra text:
                       className="load-chat-btn"
                       onClick={(e) => { e.stopPropagation(); onLoadChat(m); }}
                       style={{
-                        background: 'rgba(124,106,247,0.1)',
-                        border: '1px solid rgba(124,106,247,0.18)',
-                        borderRadius: 7, padding: '4px 11px',
-                        color: '#9b87f5', cursor: 'pointer',
-                        fontSize: 11.5, fontWeight: 500,
+                        background: '#f5f4fe',
+                        border: '1.5px solid #ede9fe',
+                        borderRadius: 8, padding: '5px 13px',
+                        color: '#7c6af7', cursor: 'pointer',
+                        fontSize: 12.5, fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: 5,
+                        transition: 'all 0.15s',
                       }}
                     >
                       💬 Open in Chat
@@ -531,10 +456,11 @@ Respond ONLY with this JSON format, no extra text:
                       disabled={deletingId === m.id}
                       style={{
                         background: 'transparent',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        borderRadius: 7, padding: '4px 9px',
-                        color: '#3a3860', cursor: 'pointer',
-                        fontSize: 11.5,
+                        border: '1.5px solid #ede9fe',
+                        borderRadius: 8, padding: '5px 10px',
+                        color: '#c4bfe8', cursor: 'pointer',
+                        fontSize: 12.5, fontWeight: 500,
+                        transition: 'all 0.15s',
                       }}
                     >{deletingId === m.id ? '…' : '✕'}</button>
                   </div>
@@ -544,10 +470,6 @@ Respond ONLY with this JSON format, no extra text:
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes manageai-spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

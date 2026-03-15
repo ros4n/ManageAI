@@ -76,7 +76,6 @@ export default function App() {
     });
   };
 
-  // Called from Dashboard/Search to open a memory as a chat
   const handleLoadMemoryChat = (memory) => {
     const s = {
       id: generateId(),
@@ -95,7 +94,6 @@ export default function App() {
     setPage('chat');
   };
 
-  // Group sessions by recency
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
   const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -119,70 +117,84 @@ export default function App() {
     <div style={{
       display: 'flex',
       height: '100vh',
-      background: '#0c0c14',
-      fontFamily: "'DM Sans', 'Sora', -apple-system, system-ui, sans-serif",
-      color: '#e2e0f0',
+      background: '#f5f4fe',
+      fontFamily: "'Outfit', 'DM Sans', -apple-system, system-ui, sans-serif",
+      color: '#1a1640',
       overflow: 'hidden',
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2d2b45; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d4cffa; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b8b0f5; }
         button, textarea, input { font-family: inherit; }
-        ::placeholder { color: #3d3b58; }
-        .session-item { transition: background 0.15s; }
-        .session-item:hover { background: rgba(255,255,255,0.05) !important; }
-        .session-item.active { background: rgba(124,106,247,0.13) !important; }
-        .nav-btn { transition: all 0.15s; }
-        .nav-btn:hover { background: rgba(255,255,255,0.05) !important; color: #c4b5fd !important; }
-        .nav-btn.active { background: rgba(124,106,247,0.12) !important; color: #c4b5fd !important; }
+        ::placeholder { color: #b0acd4; }
+
+        .session-item { transition: background 0.15s, border-color 0.15s; border-radius: 10px; }
+        .session-item:hover { background: #f0eeff !important; }
+        .session-item.active { background: #ede9fe !important; border-color: #c4b5fd !important; }
+
+        .nav-btn { transition: all 0.15s; border-radius: 10px; }
+        .nav-btn:hover { background: #f0eeff !important; color: #6c5ce7 !important; }
+        .nav-btn.active { background: #ede9fe !important; color: #6c5ce7 !important; }
+
         .delete-btn { opacity: 0; transition: opacity 0.15s; }
         .session-item:hover .delete-btn { opacity: 1; }
+
         .send-btn { transition: all 0.2s; }
-        .send-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .send-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+
         pre { overflow-x: auto; }
         code { font-family: 'Fira Code', 'Consolas', monospace !important; }
+
+        .new-chat-btn { transition: all 0.15s; }
+        .new-chat-btn:hover { background: #ede9fe !important; }
+
+        .header-new-chat:hover { background: #ede9fe !important; }
       `}</style>
 
       {/* ── Sidebar ── */}
       {sidebarOpen && (
         <aside style={{
-          width: 256,
-          background: '#0f0f1c',
-          borderRight: '1px solid rgba(255,255,255,0.055)',
+          width: 264,
+          background: '#ffffff',
+          borderRight: '1px solid #ede9fe',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
+          boxShadow: '2px 0 16px rgba(108,92,231,0.06)',
         }}>
           {/* Logo + new chat */}
           <div style={{
-            padding: '16px 14px 12px',
-            borderBottom: '1px solid rgba(255,255,255,0.055)',
+            padding: '18px 16px 14px',
+            borderBottom: '1px solid #f0eeff',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
-                width: 30, height: 30,
+                width: 34, height: 34,
                 background: 'linear-gradient(135deg, #7c6af7 0%, #3ecfcf 100%)',
-                borderRadius: 9, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff',
+                borderRadius: 10, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff',
                 letterSpacing: '-0.5px', flexShrink: 0,
+                boxShadow: '0 2px 10px rgba(124,106,247,0.35)',
               }}>M</div>
               <div>
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: '#e2e0f0', letterSpacing: '-0.4px', lineHeight: 1 }}>ManageAI</div>
-                <div style={{ fontSize: 10, color: '#4a4870', marginTop: 2, letterSpacing: '0.02em' }}>Smart Memory Chat</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1640', letterSpacing: '-0.4px', lineHeight: 1 }}>ManageAI</div>
+                <div style={{ fontSize: 11, color: '#a09cc8', marginTop: 2 }}>Smart Memory Chat</div>
               </div>
             </div>
             <button
+              className="new-chat-btn"
               onClick={handleNewChat}
               title="New chat"
               style={{
-                background: 'rgba(124,106,247,0.12)',
-                border: '1px solid rgba(124,106,247,0.22)',
-                borderRadius: 7, width: 30, height: 30,
-                color: '#a78bfa', cursor: 'pointer', fontSize: 18,
+                background: '#f5f4fe',
+                border: '1px solid #ede9fe',
+                borderRadius: 9, width: 32, height: 32,
+                color: '#7c6af7', cursor: 'pointer', fontSize: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}
@@ -192,44 +204,47 @@ export default function App() {
           </div>
 
           {/* Chat list */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 4px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 4px' }}>
             {groupOrder.filter(g => groups[g]).map(label => (
               <div key={label}>
                 <div style={{
-                  fontSize: 10, fontWeight: 600, color: '#3d3b58',
-                  textTransform: 'uppercase', letterSpacing: '0.1em',
-                  padding: '10px 8px 5px',
+                  fontSize: 10.5, fontWeight: 700, color: '#c4bfe8',
+                  textTransform: 'uppercase', letterSpacing: '0.12em',
+                  padding: '12px 8px 5px',
                 }}>{label}</div>
                 {groups[label].map(s => (
                   <div
                     key={s.id}
                     className={`session-item${s.id === activeSessionId ? ' active' : ''}`}
                     onClick={() => handleSelectSession(s.id)}
+                    onMouseEnter={() => setHoveredSession(s.id)}
+                    onMouseLeave={() => setHoveredSession(null)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-                      border: `1px solid ${s.id === activeSessionId ? 'rgba(124,106,247,0.18)' : 'transparent'}`,
-                      marginBottom: 1, position: 'relative',
+                      padding: '8px 10px',
+                      border: `1px solid ${s.id === activeSessionId ? '#c4b5fd' : 'transparent'}`,
+                      marginBottom: 2, cursor: 'pointer', position: 'relative',
                     }}
                   >
-                    <span style={{ fontSize: 12.5, flexShrink: 0 }}>💬</span>
+                    <span style={{ fontSize: 13, flexShrink: 0 }}>💬</span>
                     <span style={{
-                      fontSize: 12.5, flex: 1,
+                      fontSize: 13, flex: 1,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      color: s.id === activeSessionId ? '#c4b5fd' : '#7a7898',
-                      fontWeight: s.id === activeSessionId ? 500 : 400,
+                      color: s.id === activeSessionId ? '#6c5ce7' : '#7a7898',
+                      fontWeight: s.id === activeSessionId ? 600 : 400,
                     }}>{s.title}</span>
                     <button
                       className="delete-btn"
                       onClick={(e) => handleDeleteSession(s.id, e)}
                       style={{
                         background: 'none', border: 'none',
-                        color: '#4a4870', cursor: 'pointer',
-                        fontSize: 11, padding: '2px',
-                        flexShrink: 0,
+                        color: '#c4bfe8', cursor: 'pointer',
+                        fontSize: 11, padding: '2px 4px',
+                        flexShrink: 0, borderRadius: 4,
+                        lineHeight: 1,
                       }}
                       onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#4a4870'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#c4bfe8'}
                     >✕</button>
                   </div>
                 ))}
@@ -239,8 +254,8 @@ export default function App() {
 
           {/* Bottom nav */}
           <div style={{
-            padding: '10px 8px 14px',
-            borderTop: '1px solid rgba(255,255,255,0.055)',
+            padding: '12px 10px 16px',
+            borderTop: '1px solid #f0eeff',
           }}>
             {navItems.map(item => (
               <button
@@ -248,16 +263,16 @@ export default function App() {
                 className={`nav-btn${page === item.id ? ' active' : ''}`}
                 onClick={() => setPage(item.id)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  width: '100%', padding: '8px 10px', borderRadius: 8,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '9px 12px',
                   border: 'none', cursor: 'pointer',
-                  background: page === item.id ? 'rgba(124,106,247,0.12)' : 'transparent',
-                  color: page === item.id ? '#c4b5fd' : '#5a5878',
-                  fontSize: 13, textAlign: 'left', marginBottom: 2,
-                  fontWeight: page === item.id ? 500 : 400,
+                  background: page === item.id ? '#ede9fe' : 'transparent',
+                  color: page === item.id ? '#6c5ce7' : '#7a7898',
+                  fontSize: 14, textAlign: 'left', marginBottom: 3,
+                  fontWeight: page === item.id ? 600 : 400,
                 }}
               >
-                <span style={{ fontSize: 15 }}>{item.icon}</span>
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             ))}
@@ -269,28 +284,29 @@ export default function App() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Top bar */}
         <header style={{
-          height: 50, flexShrink: 0,
-          background: '#0c0c14',
-          borderBottom: '1px solid rgba(255,255,255,0.055)',
+          height: 54, flexShrink: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #ede9fe',
           display: 'flex', alignItems: 'center',
-          padding: '0 16px', gap: 12,
+          padding: '0 20px', gap: 14,
+          boxShadow: '0 1px 8px rgba(108,92,231,0.05)',
         }}>
           <button
             onClick={() => setSidebarOpen(p => !p)}
             title="Toggle sidebar"
             style={{
               background: 'none', border: 'none',
-              color: '#4a4870', cursor: 'pointer',
-              fontSize: 17, display: 'flex', alignItems: 'center',
-              padding: '4px', borderRadius: 6,
-              transition: 'color 0.15s',
+              color: '#b0acd4', cursor: 'pointer',
+              fontSize: 18, display: 'flex', alignItems: 'center',
+              padding: '5px 6px', borderRadius: 7,
+              transition: 'color 0.15s, background 0.15s',
             }}
-            onMouseEnter={e => e.currentTarget.style.color = '#9b87f5'}
-            onMouseLeave={e => e.currentTarget.style.color = '#4a4870'}
+            onMouseEnter={e => { e.currentTarget.style.color = '#7c6af7'; e.currentTarget.style.background = '#f0eeff'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#b0acd4'; e.currentTarget.style.background = 'none'; }}
           >☰</button>
 
           <span style={{
-            fontSize: 13.5, fontWeight: 500, color: '#7a7898',
+            fontSize: 15, fontWeight: 600, color: '#4a4478',
             flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {page === 'chat'
@@ -300,18 +316,17 @@ export default function App() {
 
           {page === 'chat' && (
             <button
+              className="header-new-chat"
               onClick={handleNewChat}
               style={{
-                background: 'rgba(124,106,247,0.1)',
-                border: '1px solid rgba(124,106,247,0.2)',
-                borderRadius: 8, padding: '5px 13px',
-                color: '#a78bfa', cursor: 'pointer',
-                fontSize: 12.5, fontWeight: 500,
-                display: 'flex', alignItems: 'center', gap: 5,
+                background: '#f5f4fe',
+                border: '1px solid #ede9fe',
+                borderRadius: 9, padding: '6px 16px',
+                color: '#7c6af7', cursor: 'pointer',
+                fontSize: 13.5, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 6,
                 transition: 'all 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.18)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.1)'; }}
             >
               <span>+</span> New Chat
             </button>

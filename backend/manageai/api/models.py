@@ -9,7 +9,7 @@ class Memory(models.Model):
     answer     = models.TextField()
     topic      = models.CharField(max_length=100, default='General')
     summary    = models.TextField(blank=True, null=True)
-    embedding  = VectorField(dimensions=768, blank=True, null=True)
+    embedding  = VectorField(dimensions=3072, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
