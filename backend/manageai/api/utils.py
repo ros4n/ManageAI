@@ -1,14 +1,15 @@
 import os
 import json
 from google import genai
-from groq import Groq
+from groq import Client
+
 
 
 # Initialize Gemini client for embeddings
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Initialize Groq client for chat
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_client = Client(api_key=os.getenv("GROQ_API_KEY"))
 
 
 TOPIC_KEYWORDS = {
