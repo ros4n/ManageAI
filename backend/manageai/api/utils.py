@@ -1,13 +1,43 @@
 import os
 import json
-from google import genai 
+from google import genai
 from groq import Groq
 
-client_genai = genai.Client(api_key=os.getenv('GEMINI_API_KEY'),http_options={'api_version': 'v1beta'},)
+client_genai = genai.Client(
+    api_key=os.getenv('GEMINI_API_KEY'),
+    http_options={'api_version': 'v1beta'},
+)
 groq_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
+# ── Available models ────────────────────────────────────────
+MODELS = {
+    'llama-3.3-70b': {
+        'id':          'llama-3.3-70b-versatile',
+        'provider':    'groq',
+        'label':       'Llama 3.3 70B',
+        'description': 'Best quality, great for complex topics',
+    },
+    'llama-3.1-8b': {
+        'id':          'llama-3.1-8b-instant',
+        'provider':    'groq',
+        'label':       'Llama 3.1 8B',
+        'description': 'Fastest response, good for simple questions',
+    },
+    'mixtral-8x7b': {
+        'id':          'mixtral-8x7b-32768',
+        'provider':    'groq',
+        'label':       'Mixtral 8x7B',
+        'description': 'Great for coding and technical topics',
+    },
+    'gemma2-9b': {
+        'id':          'gemma2-9b-it',
+        'provider':    'groq',
+        'label':       'Gemma 2 9B',
+        'description': 'Google model, good for reasoning',
+    },
+}
 
-CHAT_MODEL = 'llama-3.3-70b-versatile'
+DEFAULT_MODEL = 'llama-3.3-70b'
 
 TOPIC_KEYWORDS = {
     'Algorithms': [
@@ -37,6 +67,11 @@ TOPIC_KEYWORDS = {
         'postgresql', 'mysql', 'mongodb', 'nosql', 'orm',
         'migration', 'transaction', 'normalization',
     ],
+    'Geography': [
+        'where is', 'location', 'country', 'city', 'capital',
+        'campus', 'kathmandu', 'nepal', 'continent', 'map',
+        'district', 'province', 'address', 'place', 'region',
+    ],
 }
 
 
@@ -61,16 +96,17 @@ def generate_embedding(text: str) -> list:
         return None
 
 
-def get_groq_response(messages: list, system_prompt: str = None) -> str:
+def get_groq_response(messages: list, system_prompt: str = None, model_key: str = DEFAULT_MODEL) -> str:
     try:
-        system = system_prompt or (
+        model_id = MODELS.get(model_key, MODELS[DEFAULT_MODEL])['id']
+        system   = system_prompt or (
             'You are ManageAI, a friendly and knowledgeable AI assistant with memory. '
             'Be clear, helpful, and concise. Use markdown and code blocks when appropriate.'
         )
         full_messages = [{'role': 'system', 'content': system}] + messages
 
         response = groq_client.chat.completions.create(
-            model=CHAT_MODEL,
+            model=model_id,
             messages=full_messages,
             max_tokens=1024,
             temperature=0.7,
@@ -84,7 +120,7 @@ def get_groq_response(messages: list, system_prompt: str = None) -> str:
 def generate_summary(question: str, answer: str) -> str:
     try:
         response = groq_client.chat.completions.create(
-            model=CHAT_MODEL,
+            model=MODELS[DEFAULT_MODEL]['id'],
             messages=[{
                 'role': 'user',
                 'content': (
@@ -103,7 +139,7 @@ def generate_summary(question: str, answer: str) -> str:
 def generate_flashcard(question: str, answer: str) -> dict:
     try:
         response = groq_client.chat.completions.create(
-            model=CHAT_MODEL,
+            model=MODELS[DEFAULT_MODEL]['id'],
             messages=[{
                 'role': 'user',
                 'content': (
