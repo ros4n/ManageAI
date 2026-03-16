@@ -3,7 +3,7 @@
 An AI-powered chat application with persistent memory, semantic search, and flashcard generation. Every conversation is automatically saved, embedded, and made searchable using vector similarity.
 
 ---
-
+# Demo video: https://drive.google.com/file/d/1HGFi2x4z57GBqJurJOgxfTmFN9D5wiDh/view?usp=sharing
 ## Features
 
 - **Persistent Memory** — Every Q&A is saved to a PostgreSQL database with vector embeddings
